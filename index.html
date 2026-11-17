@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -58,6 +57,17 @@
       border: 1px solid #cbd5e1;
     }
     .btn.ghost:hover { background: #f1f5f9; }
+
+    .btn.ghost.wake-on {
+      background: #5b8c4e;
+      color: #fff;
+      border-color: #3f6a34;
+    }
+    .btn.ghost.wake-on:hover { background: #4f7d43; }
+    .btn.ghost.wake-unavailable {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
     .columns {
       display: grid;
@@ -499,6 +509,7 @@
     <button class="btn" id="addColumnBtn">+ Add a new column</button>
     <button class="btn" id="addSliderBtn">+ Add a chord slider</button>
     <button class="btn ghost" id="resetBtn">Reset layout</button>
+    <button class="btn ghost" id="wakeBtn" role="switch" aria-checked="false">☾ Keep screen awake</button>
   </div>
 
   <div class="columns" id="columns"></div>
@@ -744,6 +755,88 @@
         }
       }
       const INVERSION_NAMES = ['Root', '1st', '2nd', '3rd'];
+
+      // =====================================================================
+      //  WAKE LOCK  (lifted from the Key Trainer)
+      // =====================================================================
+      const wakeBtn = document.getElementById('wakeBtn');
+      const wakeSupported = 'wakeLock' in navigator;
+      let wakeLock = null;
+      let wakeLockWanted = false;
+      let wakeLockPending = false;
+      let wakeLockBlocked = false;
+
+      function updateWakeUI() {
+        if (!wakeSupported || wakeLockBlocked) {
+          wakeBtn.classList.remove('wake-on');
+          wakeBtn.classList.add('wake-unavailable');
+          wakeBtn.disabled = true;
+          wakeBtn.setAttribute('aria-checked', 'false');
+          wakeBtn.textContent = '☾ Wake lock unavailable';
+          return;
+        }
+        wakeBtn.disabled = wakeLockPending;
+        if (wakeLock && !wakeLock.released) {
+          wakeBtn.classList.add('wake-on');
+          wakeBtn.classList.remove('wake-unavailable');
+          wakeBtn.setAttribute('aria-checked', 'true');
+          wakeBtn.textContent = '☀ Screen staying awake';
+        } else {
+          wakeBtn.classList.remove('wake-on');
+          wakeBtn.classList.remove('wake-unavailable');
+          wakeBtn.setAttribute('aria-checked', 'false');
+          wakeBtn.textContent = wakeLockPending ? '☀ Turning on…' : '☾ Keep screen awake';
+        }
+      }
+
+      async function acquireWakeLock() {
+        if (!wakeSupported || wakeLockBlocked) return;
+        if (wakeLock && !wakeLock.released) return;
+        wakeLockPending = true;
+        updateWakeUI();
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => { wakeLock = null; updateWakeUI(); });
+        } catch (err) {
+          console.warn('Wake lock request failed:', err);
+          wakeLock = null;
+          if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+            wakeLockBlocked = true;
+          }
+          wakeLockWanted = false;
+        }
+        wakeLockPending = false;
+        updateWakeUI();
+      }
+
+      async function releaseWakeLock() {
+        if (wakeLock && !wakeLock.released) {
+          try { await wakeLock.release(); } catch (e) { console.warn(e); }
+          wakeLock = null;
+        }
+        updateWakeUI();
+      }
+
+      async function toggleWakeLock() {
+        if (wakeLockPending || wakeLockBlocked || !wakeSupported) return;
+        if (wakeLockWanted) {
+          wakeLockWanted = false;
+          await releaseWakeLock();
+        } else {
+          wakeLockWanted = true;
+          await acquireWakeLock();
+        }
+      }
+
+      wakeBtn.addEventListener('click', toggleWakeLock);
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible' && wakeLockWanted && !wakeLock && !wakeLockBlocked) {
+          await acquireWakeLock();
+        } else {
+          updateWakeUI();
+        }
+      });
+      updateWakeUI();
 
       // =====================================================================
       //  SLIDER
