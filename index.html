@@ -1,1 +1,1705 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chord inversion keyboards</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: linear-gradient(145deg, #f5f7fa 0%, #e9ecf2 100%);
+      min-height: 100vh;
+      font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+      padding: 2rem 1rem;
+    }
+
+    .page-title {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 0.4rem;
+    }
+
+    .page-sub {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 1.5rem;
+    }
+
+    .toolbar {
+      max-width: 1400px;
+      margin: 0 auto 1.5rem;
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: #1e293b;
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.1rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn:hover  { background: #0f172a; }
+    .btn:active { transform: scale(0.97); }
+
+    .btn.ghost {
+      background: transparent;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+    }
+    .btn.ghost:hover { background: #f1f5f9; }
+
+    .columns {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 340px;
+      gap: 1rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      align-items: start;
+      justify-content: start;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+    .columns::-webkit-scrollbar { height: 10px; }
+    .columns::-webkit-scrollbar-track { background: transparent; }
+    .columns::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
+    .columns::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      min-width: 0;
+    }
+
+    .column-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.3rem 0.1rem;
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      min-height: 3.6rem;   /* reserve title row + badge row so all headers match */
+    }
+
+    .column-header .column-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .column-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.15rem;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .column-transpose {
+      font-size: 0.68rem;
+      font-family: inherit;
+      padding: 0.1rem 0.15rem;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #475569;
+      cursor: pointer;
+      max-width: 6.2rem;
+      font-weight: 600;
+    }
+    .column-transpose:focus { outline: 2px solid #94a3b8; }
+
+    .column-mode {
+      font-size: 0.66rem;
+      font-family: inherit;
+      font-weight: 600;
+      padding: 0.1rem 0.3rem;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #475569;
+      cursor: pointer;
+      white-space: nowrap;
+      line-height: 1.5;
+    }
+    .column-mode:hover { background: #f1f5f9; color: #1e293b; }
+    .column-mode:active { transform: scale(0.97); }
+
+    /* Theoretical badge: sits ABOVE the title/controls row.
+       Its space is always reserved (visibility:hidden when empty) so every
+       column header is the same height and sliders line up horizontally. */
+    .column-theory {
+      flex-basis: 100%;
+      font-size: 0.66rem;
+      font-weight: 600;
+      color: #8a6a20;
+      background: #fff5e0;
+      border: 1px solid #e8c88a;
+      border-left: 3px solid #d4a043;
+      border-radius: 4px;
+      padding: 0.2rem 0.4rem;
+      margin-bottom: 0.2rem;
+      letter-spacing: 0.2px;
+      text-transform: none;
+      white-space: normal;
+      min-height: 1.4rem;
+      line-height: 1.2;
+      box-sizing: border-box;
+    }
+    .column-theory.hidden {
+      visibility: hidden;
+    }
+
+    .column-step {
+      width: 1.6rem;
+      height: 1.6rem;
+      background: transparent;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 400;
+      color: #475569;
+      line-height: 1;
+      user-select: none;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      padding: 0;
+    }
+    .column-step:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+      border-color: #94a3b8;
+    }
+    .column-step:active { transform: scale(0.95); }
+
+    .column-duplicate {
+      width: 1.6rem;
+      height: 1.6rem;
+      background: transparent;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: #475569;
+      line-height: 1;
+      user-select: none;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      padding: 0;
+      margin-left: 0.15rem;
+    }
+    .column-duplicate:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+      border-color: #94a3b8;
+    }
+    .column-duplicate:active { transform: scale(0.95); }
+
+    .column-remove {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      line-height: 1;
+      padding: 0.15rem 0.35rem;
+      margin-left: 0.15rem;
+      transition: color 0.2s, background 0.2s;
+    }
+    .column-remove:hover { color: #b91c1c; background: #fee2e2; }
+
+    .column-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .slider {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.4);
+      background: #fff;
+    }
+
+    .chord-picker {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.3rem 0.35rem;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+
+    .chord-picker select {
+      flex: 1;
+      min-width: 70px;
+      padding: 0.25rem 0.4rem;
+      font-size: 0.78rem;
+      font-family: inherit;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      color: #1e293b;
+      cursor: pointer;
+    }
+    .chord-picker select:focus { outline: 2px solid #94a3b8; outline-offset: 0; }
+
+    .mode-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .acc-toggle,
+    .family-toggle,
+    .mode-toggle {
+      display: flex;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      flex-shrink: 0;
+    }
+
+    .mode-btn,
+    .acc-btn,
+    .family-btn {
+      background: transparent;
+      border: none;
+      padding: 0.22rem 0.45rem;
+      font-size: 0.7rem;
+      font-family: inherit;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    .mode-btn:hover,
+    .acc-btn:hover,
+    .family-btn:hover { background: #f1f5f9; }
+    .mode-btn.active,
+    .acc-btn.active,
+    .family-btn.active {
+      background: #1e293b;
+      color: #fff;
+    }
+
+    .slide-frame {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      background: #f8fafc;
+      padding: 0.5rem;
+    }
+
+    .keyboard {
+      position: relative;
+      width: 100%;
+      height: 90px;
+      user-select: none;
+    }
+
+    .white-row {
+      display: flex;
+      height: 100%;
+    }
+
+    .white-key {
+      flex: 1;
+      background: #ffffff;
+      border: 1px solid #94a3b8;
+      border-top: none;
+      margin-left: -1px;
+      position: relative;
+      transition: background 0.15s;
+      box-sizing: border-box;
+    }
+    .white-key:first-child { margin-left: 0; }
+    .white-key.lit {
+      background: #f97316;
+      border-color: #c2410c;
+    }
+
+    .black-key {
+      position: absolute;
+      top: 0;
+      height: 60%;
+      background: #1e293b;
+      border-radius: 0 0 3px 3px;
+      z-index: 3;
+      transition: background 0.15s;
+    }
+
+    .black-key.lit { background: #f97316; }
+
+    .slider-actions {
+      position: absolute;
+      bottom: 0.5rem;
+      right: 0.5rem;
+      display: flex;
+      gap: 0.25rem;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .slide-frame:hover .slider-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .slider-action {
+      width: 1.6rem;
+      height: 1.6rem;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      line-height: 1;
+      color: #334155;
+      font-weight: 700;
+      box-shadow: 0 3px 8px -2px rgba(0, 0, 0, 0.4);
+      transition: background 0.2s, color 0.2s;
+    }
+    .slider-action:hover        { background: #e2e8f0; }
+    .slider-action.remove       { color: #b91c1c; }
+    .slider-action.remove:hover { background: #fee2e2; }
+
+    .slide-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f1f5f9;
+      border-top: 1px solid #e2e8f0;
+      padding: 0.2rem 0.3rem;
+      gap: 0.25rem;
+    }
+
+    .slide-arrow {
+      width: 1.6rem;
+      height: 1.6rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: #64748b;
+      line-height: 1;
+      user-select: none;
+      border-radius: 50%;
+      transition: background 0.2s, color 0.2s, transform 0.15s;
+      flex-shrink: 0;
+    }
+    .slide-arrow:hover  { background: #e2e8f0; color: #1e293b; }
+    .slide-arrow:active { transform: scale(0.92); }
+
+    .slide-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .inversion-label {
+      font-size: 0.72rem;
+      color: #1e293b;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+
+    .slide-dots {
+      display: flex;
+      gap: 0.25rem;
+      justify-content: center;
+    }
+    .slide-dots .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(148, 163, 184, 0.4);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .slide-dots .dot.active {
+      background: #64748b;
+      transform: scale(1.4);
+    }
+
+    .column-add {
+      background: transparent;
+      border: 2px dashed #cbd5e1;
+      color: #94a3b8;
+      padding: 0.7rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    .column-add:hover {
+      border-color: #64748b;
+      color: #1e293b;
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    @media (max-width: 600px) {
+      .slide-arrow { width: 1.4rem; height: 1.4rem; font-size: 0.95rem; }
+      .inversion-label { font-size: 0.65rem; }
+      .slide-dots .dot { width: 4px; height: 4px; }
+      .keyboard { height: 70px; }
+      .columns { grid-auto-columns: 300px; }
+      .column-step,
+      .column-duplicate { width: 1.4rem; height: 1.4rem; font-size: 0.85rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="page-title">chord inversions</h1>
+  <p class="page-sub">Pick a chord · ‹ › walk a chord or a whole column up/down the keyboard</p>
+
+  <div class="toolbar">
+    <button class="btn" id="addColumnBtn">+ Add a new column</button>
+    <button class="btn" id="addSliderBtn">+ Add a chord slider</button>
+    <button class="btn ghost" id="resetBtn">Reset layout</button>
+  </div>
+
+  <div class="columns" id="columns"></div>
+
+  <script>
+    (function () {
+
+      // =====================================================================
+      //  SPELLING / KEY ENGINE  (lifted from the Key Trainer)
+      // =====================================================================
+      const NOTE_TO_PC = {
+        'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'Fb':4,'E#':5,
+        'F':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,
+        'B':11,'Cb':11,'B#':0,
+        'Cx':2,'Dbb':0,'Dx':4,'Ebb':2,'Ex':6,'Fbb':3,
+        'Fx':7,'Gbb':5,'Gx':9,'Abb':7,'Ax':11,'Bbb':9,'Bx':1
+      };
+      const MAJOR_STEPS = [0,2,4,5,7,9,11];
+      const MINOR_STEPS = [0,2,3,5,7,8,10];
+
+      const MAJOR_KEYS = [
+        { name:'C',   type:'natural', count:0 },
+        { name:'G',   type:'sharp',   count:1 },
+        { name:'D',   type:'sharp',   count:2 },
+        { name:'A',   type:'sharp',   count:3 },
+        { name:'E',   type:'sharp',   count:4 },
+        { name:'B',   type:'sharp',   count:5 },
+        { name:'F#',  type:'sharp',   count:6 },
+        { name:'C#',  type:'sharp',   count:7 },
+        { name:'F',   type:'flat',    count:1 },
+        { name:'Bb',  type:'flat',    count:2 },
+        { name:'Eb',  type:'flat',    count:3 },
+        { name:'Ab',  type:'flat',    count:4 },
+        { name:'Db',  type:'flat',    count:5 },
+        { name:'Gb',  type:'flat',    count:6 },
+        { name:'Cb',  type:'flat',    count:7 }
+      ];
+      const ALL_MAJOR = MAJOR_KEYS.map(k => k.name);
+
+      function relativeMinorOf(majorName) {
+        const map = {
+          'C':'A','G':'E','D':'B','A':'F#','E':'C#','B':'G#','F#':'D#','C#':'A#',
+          'F':'D','Bb':'G','Eb':'C','Ab':'F','Db':'Bb','Gb':'Eb','Cb':'Ab'
+        };
+        return map[majorName];
+      }
+      function relativeMajorOf(minorName) {
+        const map = {
+          'A':'C','E':'G','B':'D','F#':'A','C#':'E','G#':'B','D#':'F#','A#':'C#',
+          'D':'F','G':'Bb','C':'Eb','F':'Ab','Bb':'Db','Eb':'Gb','Ab':'Cb'
+        };
+        return map[minorName];
+      }
+
+      // The five theoretical keys the Key Trainer flags
+      const THEORETICAL_KEYS = {
+        'C#': { twinName:'Db', twinQuality:'major',
+                reason:'C# major needs 7 sharps (including E# and B#). Practical spelling: Db major (5 flats).' },
+        'Cb': { twinName:'B',  twinQuality:'major',
+                reason:'Cb major needs 7 flats (including Cb and Fb). Practical spelling: B major (5 sharps).' },
+        'A#': { twinName:'Bb', twinQuality:'minor',
+                reason:'A# minor needs 7 sharps (including B# and E#). Practical spelling: Bb minor (5 flats).' },
+        'D#': { twinName:'Eb', twinQuality:'minor',
+                reason:'D# minor needs 6 sharps plus a double sharp (Cx). Practical spelling: Eb minor (6 flats).' },
+        'G#': { twinName:'Ab', twinQuality:'minor',
+                reason:'G# minor needs 5 sharps. Practical flat-key spelling: Ab minor (7 flats).' }
+      };
+
+      function spellNote(letter, targetPc) {
+        const naturalPc = { 'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11 };
+        const natural = naturalPc[letter];
+        const diff = (targetPc - natural + 12) % 12;
+        if (diff === 0) return letter;
+        if (diff === 1) return letter + '#';
+        if (diff === 11) return letter + 'b';
+        if (diff === 2) return letter + 'x';
+        if (diff === 10) return letter + 'bb';
+        return letter;
+      }
+
+      function buildScaleByLetters(tonicName, steps) {
+        const letters = ['C','D','E','F','G','A','B'];
+        const startIdx = letters.indexOf(tonicName[0]);
+        if (startIdx === -1) return [];
+        const tonicPc = NOTE_TO_PC[tonicName];
+        const notes = [];
+        for (let i = 0; i < steps.length; i++) {
+          const letter = letters[(startIdx + i) % 7];
+          const targetPc = (tonicPc + steps[i]) % 12;
+          notes.push(spellNote(letter, targetPc));
+        }
+        return notes;
+      }
+
+      function buildMajorScale(t) { return buildScaleByLetters(t, MAJOR_STEPS); }
+      function buildMinorScale(t) { return buildScaleByLetters(t, MINOR_STEPS); }
+
+      function spellPcInKey(targetPc, keyName, keyQuality) {
+        const isMinor = keyQuality === 'minor';
+        const scale = isMinor ? buildMinorScale(keyName) : buildMajorScale(keyName);
+        const letters = ['C','D','E','F','G','A','B'];
+        const tonicLetter = keyName[0];
+        const startIdx = letters.indexOf(tonicLetter);
+
+        for (let i = 0; i < scale.length; i++) {
+          if (NOTE_TO_PC[scale[i]] === targetPc) return scale[i];
+        }
+
+        let best = null;
+        let bestDist = 99;
+        for (let i = 0; i < 7; i++) {
+          const letter = letters[(startIdx + i) % 7];
+          const naturalPc = { 'C':0,'D':2,'E':4,'F':5,'G':7,'A':9,'B':11 }[letter];
+          let dist = (targetPc - naturalPc + 12) % 12;
+          if (dist > 6) dist = 12 - dist;
+          if (dist < bestDist) { bestDist = dist; best = letter; }
+        }
+        return spellNote(best || 'C', targetPc);
+      }
+
+      function transposeSpelledNote(noteName, semitones, preferFlat) {
+        const letters = ['C','D','E','F','G','A','B'];
+        const letterIdx = letters.indexOf(noteName[0]);
+        if (letterIdx === -1) return noteName;
+        const currentPc = NOTE_TO_PC[noteName];
+        const targetPc = ((currentPc + semitones) % 12 + 12) % 12;
+
+        const absSemis = Math.abs(semitones) % 12;
+        const stepMap = { 0:0, 1:1, 2:1, 3:2, 4:2, 5:3, 6:3, 7:4, 8:5, 9:5, 10:6, 11:6 };
+        let letterStep = stepMap[absSemis] !== undefined ? stepMap[absSemis] : 0;
+        if (semitones < 0) letterStep = -letterStep;
+
+        const targetLetter = letters[((letterIdx + letterStep) % 7 + 7) % 7];
+        const naturalPc = { 'C':0,'D':2,'E':4,'F':5,'G':7,'A':9,'B':11 }[targetLetter];
+        let diff = (targetPc - naturalPc + 12) % 12;
+
+        if (diff === 0) return targetLetter;
+        if (diff === 1) return targetLetter + '#';
+        if (diff === 11) return targetLetter + 'b';
+        if (diff === 2) return targetLetter + 'x';
+        if (diff === 10) return targetLetter + 'bb';
+        return preferFlat ? spellNoteByFlat(targetPc) : spellNoteBySharp(targetPc);
+      }
+
+      function spellNoteBySharp(pc) {
+        return ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'][((pc % 12) + 12) % 12];
+      }
+      function spellNoteByFlat(pc) {
+        return ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'][((pc % 12) + 12) % 12];
+      }
+
+      // =====================================================================
+      //  KEYBOARD / RANGE
+      // =====================================================================
+      const WHITE_PCS  = [0, 2, 4, 5, 7, 9, 11];
+      const WHITE_PCS_BY_INDEX = [];
+      for (let i = 0; i < 22; i++) WHITE_PCS_BY_INDEX.push(WHITE_PCS[i % 7]);
+
+      const BLACK_AFTER_PC = new Set([0, 2, 5, 7, 9]);
+      const BLACK_KEYS = [];
+      for (let i = 0; i < 21; i++) {
+        const pc = WHITE_PCS_BY_INDEX[i];
+        if (BLACK_AFTER_PC.has(pc)) {
+          BLACK_KEYS.push({ leftOfWhite: i, pc: (pc + 1) % 12 });
+        }
+      }
+      const BLACK_PCS = new Set([1, 3, 6, 8, 10]);
+
+      const LOWEST_SEMITONE  = 0;
+      const HIGHEST_SEMITONE = 36;
+
+      function semitoneToKey(s) {
+        const pc = ((s % 12) + 12) % 12;
+        const octave = Math.floor(s / 12);
+        if (BLACK_PCS.has(pc)) {
+          const idx = BLACK_KEYS.findIndex(bk => {
+            const leftOct = Math.floor(bk.leftOfWhite / 7);
+            return bk.pc === pc && leftOct === octave;
+          });
+          if (idx >= 0) return { type: 'black', index: idx };
+          return null;
+        } else {
+          const withinOct = WHITE_PCS.indexOf(pc);
+          const idx = octave * 7 + withinOct;
+          if (idx >= 0 && idx < 22) return { type: 'white', index: idx };
+          return null;
+        }
+      }
+
+      // =====================================================================
+      //  CHORD INTERVALS
+      // =====================================================================
+      const TRIADS = {
+        major: [0, 4, 7],
+        minor: [0, 3, 7],
+        dim:   [0, 3, 6]
+      };
+      const SEVENTHS = {
+        maj7:  [0, 4, 7, 11],
+        min7:  [0, 3, 7, 10],
+        dom7:  [0, 4, 7, 10],
+        dim7:  [0, 3, 6, 9]
+      };
+
+      function getIntervals(quality) {
+        if (TRIADS[quality])  return TRIADS[quality].slice();
+        if (SEVENTHS[quality]) return SEVENTHS[quality].slice();
+        return TRIADS.major.slice();
+      }
+      function isSeventh(quality) { return !!SEVENTHS[quality]; }
+      function inversionCount(quality) { return isSeventh(quality) ? 4 : 3; }
+
+      function getInversionOffsets(quality, inversion) {
+        const base = getIntervals(quality);
+        let result = base.slice();
+        for (let n = 0; n < inversion; n++) {
+          const first = result.shift();
+          result.push(first + 12);
+        }
+        return result;
+      }
+
+      const PARALLEL_MAP = {
+        major: 'minor', minor: 'major',
+        maj7: 'min7', min7: 'maj7'
+      };
+      const RELATIVE_MAP = {
+        major: { delta: -3, quality: 'minor' },
+        minor: { delta: +3, quality: 'major' },
+        maj7:  { delta: -3, quality: 'min7'  },
+        min7:  { delta: +3, quality: 'maj7'  }
+      };
+
+      function qualitySuffix(quality) {
+        switch (quality) {
+          case 'minor': return 'm';
+          case 'dim':   return 'dim';
+          case 'maj7':  return 'maj7';
+          case 'min7':  return 'm7';
+          case 'dom7':  return '7';
+          case 'dim7':  return 'dim7';
+          default:      return '';
+        }
+      }
+      const INVERSION_NAMES = ['Root', '1st', '2nd', '3rd'];
+
+      // =====================================================================
+      //  SLIDER
+      // =====================================================================
+      function createSlider(initial = {}) {
+        const state = {
+          rootPc:     initial.rootPc ?? initial.root ?? 0,
+          quality:    initial.quality ?? 'major',
+          accidental: initial.accidental ?? null,
+          spelledRoot: initial.spelledRoot ?? null
+        };
+
+        let inversion = initial.inversion ?? 0;
+        let rootSem   = initial.rootSem   ?? 12;
+        let anchorInversion = initial._anchorInv     ?? inversion;
+        let anchorRootSem   = initial._anchorRootSem ?? rootSem;
+
+        let columnKey = initial._columnKey ?? null;
+        let columnKeyQuality = initial._columnKeyQuality ?? 'major';
+
+        const slider = document.createElement('div');
+        slider.className = 'slider';
+
+        const picker = document.createElement('div');
+        picker.className = 'chord-picker';
+
+        const select = document.createElement('select');
+        select.setAttribute('aria-label', 'Chord root');
+
+        function rebuildRootOptions() {
+          select.innerHTML = '';
+          for (let pc = 0; pc < 12; pc++) {
+            const opt = document.createElement('option');
+            opt.value = pc;
+            opt.textContent = '—';
+            select.appendChild(opt);
+          }
+          relabelRootOptions();
+          select.value = String(state.rootPc);
+        }
+        function relabelRootOptions() {
+          for (let pc = 0; pc < 12; pc++) {
+            const opt = select.options[pc];
+            if (!opt) continue;
+            if (state.accidental === 'flat')      opt.textContent = spellNoteByFlat(pc);
+            else if (state.accidental === 'sharp') opt.textContent = spellNoteBySharp(pc);
+            else if (columnKey)                    opt.textContent = spellPcInKey(pc, columnKey, columnKeyQuality);
+            else                                   opt.textContent = spellNoteBySharp(pc);
+          }
+        }
+        select.addEventListener('change', () => {
+          state.rootPc = Number(select.value);
+          state.spelledRoot = null;
+          rootSem = snapRootSem(state, inversion, rootSem);
+          notifyManualChange();
+        });
+        picker.appendChild(select);
+        rebuildRootOptions();
+
+        const accToggle = document.createElement('div');
+        accToggle.className = 'acc-toggle';
+        const sharpBtn = document.createElement('button');
+        sharpBtn.className = 'acc-btn';
+        sharpBtn.textContent = '♯';
+        const flatBtn = document.createElement('button');
+        flatBtn.className = 'acc-btn';
+        flatBtn.textContent = '♭';
+        function updateAccButtons() {
+          sharpBtn.classList.toggle('active', state.accidental === 'sharp');
+          flatBtn.classList.toggle('active', state.accidental === 'flat');
+        }
+        updateAccButtons();
+        sharpBtn.addEventListener('click', () => {
+          state.accidental = 'sharp';
+          updateAccButtons();
+          relabelRootOptions();
+          render();
+          saveLayout();
+        });
+        flatBtn.addEventListener('click', () => {
+          state.accidental = 'flat';
+          updateAccButtons();
+          relabelRootOptions();
+          render();
+          saveLayout();
+        });
+        accToggle.appendChild(sharpBtn);
+        accToggle.appendChild(flatBtn);
+
+        const modePanel = document.createElement('div');
+        modePanel.className = 'mode-panel';
+
+        const familyToggle = document.createElement('div');
+        familyToggle.className = 'family-toggle';
+        const triadBtn = document.createElement('button');
+        triadBtn.className = 'family-btn';
+        triadBtn.textContent = 'triad';
+        const seventhBtn = document.createElement('button');
+        seventhBtn.className = 'family-btn';
+        seventhBtn.textContent = '7th';
+        familyToggle.appendChild(triadBtn);
+        familyToggle.appendChild(seventhBtn);
+
+        const modeToggle = document.createElement('div');
+        modeToggle.className = 'mode-toggle';
+
+        const triadQualities = [
+          { key: 'major', label: 'maj' },
+          { key: 'minor', label: 'min' },
+          { key: 'dim',   label: 'dim' }
+        ];
+        const seventhQualities = [
+          { key: 'maj7', label: 'maj7' },
+          { key: 'min7', label: 'm7' },
+          { key: 'dom7', label: '7' },
+          { key: 'dim7', label: 'dim7' }
+        ];
+
+        function rebuildModeButtons() {
+          modeToggle.innerHTML = '';
+          const family = isSeventh(state.quality) ? 'seventh' : 'triad';
+          const list = family === 'seventh' ? seventhQualities : triadQualities;
+          list.forEach(q => {
+            const btn = document.createElement('button');
+            btn.className = 'mode-btn' + (state.quality === q.key ? ' active' : '');
+            btn.textContent = q.label;
+            btn.addEventListener('click', () => {
+              state.quality = q.key;
+              if (inversion >= inversionCount(state.quality)) inversion = 0;
+              rootSem = snapRootSem(state, inversion, rootSem);
+              rebuildModeButtons();
+              rebuildDots();
+              notifyManualChange();
+            });
+            modeToggle.appendChild(btn);
+          });
+          triadBtn.classList.toggle('active', family === 'triad');
+          seventhBtn.classList.toggle('active', family === 'seventh');
+        }
+        triadBtn.addEventListener('click', () => {
+          if (!isSeventh(state.quality)) return;
+          state.quality = 'major';
+          if (inversion >= inversionCount(state.quality)) inversion = 0;
+          rootSem = snapRootSem(state, inversion, rootSem);
+          rebuildModeButtons(); rebuildDots(); notifyManualChange();
+        });
+        seventhBtn.addEventListener('click', () => {
+          if (isSeventh(state.quality)) return;
+          state.quality = 'maj7';
+          if (inversion >= inversionCount(state.quality)) inversion = 0;
+          rootSem = snapRootSem(state, inversion, rootSem);
+          rebuildModeButtons(); rebuildDots(); notifyManualChange();
+        });
+
+        modePanel.appendChild(familyToggle);
+        modePanel.appendChild(modeToggle);
+        picker.appendChild(modePanel);
+        picker.appendChild(accToggle);
+        slider.appendChild(picker);
+
+        const frame = document.createElement('div');
+        frame.className = 'slide-frame';
+
+        const keyboard = document.createElement('div');
+        keyboard.className = 'keyboard';
+
+        const whiteRow = document.createElement('div');
+        whiteRow.className = 'white-row';
+        for (let i = 0; i < 22; i++) {
+          const wk = document.createElement('div');
+          wk.className = 'white-key';
+          wk.dataset.index = i;
+          whiteRow.appendChild(wk);
+        }
+        keyboard.appendChild(whiteRow);
+
+        BLACK_KEYS.forEach((bk, idx) => {
+          const el = document.createElement('div');
+          el.className = 'black-key';
+          el.dataset.index = idx;
+          const wkWidthPct = 100 / 22;
+          const leftPct = (bk.leftOfWhite + 1) * wkWidthPct;
+          el.style.left = `calc(${leftPct}% - ${wkWidthPct * 0.30}%)`;
+          el.style.width = `${wkWidthPct * 0.60}%`;
+          keyboard.appendChild(el);
+        });
+        frame.appendChild(keyboard);
+
+        const actions = document.createElement('div');
+        actions.className = 'slider-actions';
+
+        const dupBtn = document.createElement('button');
+        dupBtn.className = 'slider-action';
+        dupBtn.title = 'Duplicate this slider';
+        dupBtn.textContent = '⧉';
+        dupBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const clone = createSlider({
+            rootPc: state.rootPc,
+            quality: state.quality,
+            accidental: state.accidental,
+            spelledRoot: state.spelledRoot,
+            inversion, rootSem,
+            _anchorInv: anchorInversion,
+            _anchorRootSem: anchorRootSem,
+            _columnKey: columnKey,
+            _columnKeyQuality: columnKeyQuality
+          });
+          slider.after(clone);
+          if (slider._onManualChange) clone._onManualChange = slider._onManualChange;
+          saveLayout();
+        });
+
+        const rmBtn = document.createElement('button');
+        rmBtn.className = 'slider-action remove';
+        rmBtn.title = 'Remove this slider';
+        rmBtn.textContent = '✕';
+        rmBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          slider.remove();
+          saveLayout();
+        });
+
+        actions.appendChild(dupBtn);
+        actions.appendChild(rmBtn);
+        frame.appendChild(actions);
+        slider.appendChild(frame);
+
+        const controls = document.createElement('div');
+        controls.className = 'slide-controls';
+
+        const prev = document.createElement('button');
+        prev.className = 'slide-arrow';
+        prev.setAttribute('aria-label', 'Down a step');
+        prev.textContent = '‹';
+
+        const meta = document.createElement('div');
+        meta.className = 'slide-meta';
+        const label = document.createElement('div');
+        label.className = 'inversion-label';
+        meta.appendChild(label);
+        const dotsWrap = document.createElement('div');
+        dotsWrap.className = 'slide-dots';
+        meta.appendChild(dotsWrap);
+
+        const next = document.createElement('button');
+        next.className = 'slide-arrow';
+        next.setAttribute('aria-label', 'Up a step');
+        next.textContent = '›';
+
+        controls.appendChild(prev);
+        controls.appendChild(meta);
+        controls.appendChild(next);
+        slider.appendChild(controls);
+
+        function rebuildDots() {
+          dotsWrap.innerHTML = '';
+          const total = inversionCount(state.quality);
+          for (let i = 0; i < total; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'dot' + (i === inversion ? ' active' : '');
+            dot.dataset.index = i;
+            dot.addEventListener('click', () => {
+              inversion = i;
+              rootSem = snapRootSem(state, inversion, rootSem);
+              notifyManualChange();
+            });
+            dotsWrap.appendChild(dot);
+          }
+        }
+
+        function chordRootName() {
+          if (state.spelledRoot) return state.spelledRoot;
+          if (state.accidental === 'flat')  return spellNoteByFlat(state.rootPc);
+          if (state.accidental === 'sharp') return spellNoteBySharp(state.rootPc);
+          if (columnKey) return spellPcInKey(state.rootPc, columnKey, columnKeyQuality);
+          return spellNoteBySharp(state.rootPc);
+        }
+
+        function buildChordLabel() {
+          const suffix = qualitySuffix(state.quality);
+          const offsets = getInversionOffsets(state.quality, inversion);
+          const rootName = chordRootName();
+          if (inversion === 0) return `${rootName}${suffix}`;
+          const bassPc = (state.rootPc + offsets[0]) % 12;
+          let bassName;
+          if (columnKey) bassName = spellPcInKey(bassPc, columnKey, columnKeyQuality);
+          else bassName = spellNoteBySharp(bassPc);
+          const invName = INVERSION_NAMES[inversion];
+          return `${rootName}${suffix}/${bassName} (${invName})`;
+        }
+
+        function snapRootSem(s, inv, rs) {
+          const offsets = getInversionOffsets(s.quality, inv);
+          const highestOffset = Math.max(...offsets);
+          const lowestOffset  = Math.min(...offsets);
+          const maxByTop = HIGHEST_SEMITONE - highestOffset;
+          let maxValid = maxByTop;
+          let maxPc = ((maxValid % 12) + 12) % 12;
+          if (maxPc !== s.rootPc) maxValid -= ((maxPc - s.rootPc) + 12) % 12;
+          const minByBottom = LOWEST_SEMITONE - lowestOffset;
+          let minValid = minByBottom;
+          let minPc = ((minValid % 12) + 12) % 12;
+          if (minPc !== s.rootPc) minValid += ((s.rootPc - minPc) + 12) % 12;
+          let v = rs;
+          let pc = ((v % 12) + 12) % 12;
+          if (pc !== s.rootPc) v += ((s.rootPc - pc) + 12) % 12;
+          if (v > maxValid) v = maxValid;
+          if (v < minValid) v = minValid;
+          return v;
+        }
+
+        function findLowestPosition(s) {
+          let best = null;
+          const count = inversionCount(s.quality);
+          for (let inv = 0; inv < count; inv++) {
+            const offsets = getInversionOffsets(s.quality, inv);
+            const lowestOffset  = Math.min(...offsets);
+            const highestOffset = Math.max(...offsets);
+            const minByBottom = LOWEST_SEMITONE - lowestOffset;
+            let minValid = minByBottom;
+            let minPc = ((minValid % 12) + 12) % 12;
+            if (minPc !== s.rootPc) minValid += ((s.rootPc - minPc) + 12) % 12;
+            const maxByTop = HIGHEST_SEMITONE - highestOffset;
+            if (minValid > maxByTop) continue;
+            if (best === null || minValid < best.rootSem) {
+              best = { inversion: inv, rootSem: minValid };
+            }
+          }
+          return best || { inversion: 0, rootSem: LOWEST_SEMITONE };
+        }
+
+        function findHighestPosition(s) {
+          let best = null;
+          let bestTopNote = -Infinity;
+          const count = inversionCount(s.quality);
+          for (let inv = 0; inv < count; inv++) {
+            const offsets = getInversionOffsets(s.quality, inv);
+            const lowestOffset  = Math.min(...offsets);
+            const highestOffset = Math.max(...offsets);
+            const maxByTop = HIGHEST_SEMITONE - highestOffset;
+            let maxValid = maxByTop;
+            let maxPc = ((maxValid % 12) + 12) % 12;
+            if (maxPc !== s.rootPc) maxValid -= ((maxPc - s.rootPc) + 12) % 12;
+            const minByBottom = LOWEST_SEMITONE - lowestOffset;
+            if (maxValid < minByBottom) continue;
+            const topNote = maxValid + highestOffset;
+            if (best === null || topNote > bestTopNote) {
+              best = { inversion: inv, rootSem: maxValid };
+              bestTopNote = topNote;
+            }
+          }
+          return best || { inversion: 0, rootSem: HIGHEST_SEMITONE };
+        }
+
+        function render() {
+          const offsets = getInversionOffsets(state.quality, inversion);
+          const semitones = offsets.map(o => rootSem + o);
+          whiteRow.querySelectorAll('.white-key').forEach(el => el.classList.remove('lit'));
+          keyboard.querySelectorAll('.black-key').forEach(el => el.classList.remove('lit'));
+          semitones.forEach(s => {
+            const k = semitoneToKey(s);
+            if (!k) return;
+            if (k.type === 'white') {
+              const el = whiteRow.querySelector(`.white-key[data-index="${k.index}"]`);
+              if (el) el.classList.add('lit');
+            } else {
+              const el = keyboard.querySelector(`.black-key[data-index="${k.index}"]`);
+              if (el) el.classList.add('lit');
+            }
+          });
+          label.textContent = buildChordLabel();
+          dotsWrap.querySelectorAll('.dot').forEach((d, i) => {
+            d.classList.toggle('active', i === inversion);
+          });
+        }
+
+        function notifyManualChange() {
+          anchorInversion = inversion;
+          anchorRootSem   = rootSem;
+          render();
+          if (slider._onManualChange) slider._onManualChange();
+          saveLayout();
+        }
+
+        function applyStep(direction) {
+          const count = inversionCount(state.quality);
+          let nextInv = inversion + (direction === 'up' ? 1 : -1);
+          let nextRootSem = rootSem;
+          if (nextInv >= count) { nextInv = 0; nextRootSem += 12; }
+          if (nextInv < 0) { nextInv = count - 1; nextRootSem -= 12; }
+          const snapped = snapRootSem(state, nextInv, nextRootSem);
+          const wrapped =
+            (direction === 'up' && snapped < nextRootSem) ||
+            (direction === 'down' && snapped > nextRootSem);
+          if (wrapped) {
+            if (direction === 'up') {
+              const lowest = findLowestPosition(state);
+              inversion = lowest.inversion; rootSem = lowest.rootSem;
+            } else {
+              const highest = findHighestPosition(state);
+              inversion = highest.inversion; rootSem = highest.rootSem;
+            }
+          } else {
+            inversion = nextInv; rootSem = snapped;
+          }
+          notifyManualChange();
+        }
+
+        prev.addEventListener('click', () => applyStep('down'));
+        next.addEventListener('click', () => applyStep('up'));
+
+        rootSem = snapRootSem(state, inversion, rootSem);
+        anchorInversion = inversion;
+        anchorRootSem   = rootSem;
+        rebuildModeButtons();
+        rebuildDots();
+        render();
+
+        slider._state = state;
+        slider._api = {
+          applyColumnStep(step) {
+            let totalInv = anchorInversion + step;
+            let octaveShift = 0;
+            const count = inversionCount(state.quality);
+            while (totalInv >= count) { totalInv -= count; octaveShift += 1; }
+            while (totalInv < 0) { totalInv += count; octaveShift -= 1; }
+            inversion = totalInv;
+            rootSem   = anchorRootSem + octaveShift * 12;
+            render();
+          },
+          fitsAtStep(step) {
+            let totalInv = anchorInversion + step;
+            let octaveShift = 0;
+            const count = inversionCount(state.quality);
+            while (totalInv >= count) { totalInv -= count; octaveShift += 1; }
+            while (totalInv < 0) { totalInv += count; octaveShift -= 1; }
+            const offsets = getInversionOffsets(state.quality, totalInv);
+            const low  = (anchorRootSem + octaveShift * 12) + Math.min(...offsets);
+            const high = (anchorRootSem + octaveShift * 12) + Math.max(...offsets);
+            return low >= LOWEST_SEMITONE && high <= HIGHEST_SEMITONE;
+          },
+          resetAnchor() {
+            anchorInversion = inversion;
+            anchorRootSem   = rootSem;
+          },
+          _resnap() {
+            rootSem = snapRootSem(state, inversion, rootSem);
+            const offs = getInversionOffsets(state.quality, inversion);
+            const low  = rootSem + Math.min(...offs);
+            const high = rootSem + Math.max(...offs);
+            if (low < LOWEST_SEMITONE || high > HIGHEST_SEMITONE) {
+              const lowest = findLowestPosition(state);
+              inversion = lowest.inversion; rootSem = lowest.rootSem;
+            }
+            anchorInversion = inversion;
+            anchorRootSem   = rootSem;
+          },
+          setRootPc(pc) {
+            state.rootPc = ((pc % 12) + 12) % 12;
+            state.spelledRoot = null;
+            this._resnap();
+            select.value = String(state.rootPc);
+            relabelRootOptions();
+            render();
+          },
+          setQuality(quality) {
+            state.quality = quality;
+            if (inversion >= inversionCount(state.quality)) {
+              inversion = inversionCount(state.quality) - 1;
+            }
+            this._resnap();
+            rebuildModeButtons();
+            rebuildDots();
+            render();
+          },
+          transposeRoot(semitones) {
+            const preferFlat = columnKey ? columnKey.includes('b') : false;
+            const currentName = chordRootName();
+            let newName = transposeSpelledNote(currentName, semitones, preferFlat);
+            state.rootPc = NOTE_TO_PC[newName] !== undefined ? NOTE_TO_PC[newName] : ((state.rootPc + semitones) % 12 + 12) % 12;
+            state.spelledRoot = newName;
+            this._resnap();
+            select.value = String(state.rootPc);
+            relabelRootOptions();
+            render();
+          },
+          toggleMode() {
+            const mapped = PARALLEL_MAP[state.quality];
+            if (!mapped) return false;
+            this.setQuality(mapped);
+            return true;
+          },
+          toRelative() {
+            const rel = RELATIVE_MAP[state.quality];
+            if (!rel) return false;
+            const preferFlat = columnKey ? columnKey.includes('b') : false;
+            const currentName = chordRootName();
+            const newName = transposeSpelledNote(currentName, rel.delta, preferFlat);
+            state.rootPc = NOTE_TO_PC[newName] !== undefined ? NOTE_TO_PC[newName] : ((state.rootPc + rel.delta) % 12 + 12) % 12;
+            state.spelledRoot = newName;
+            state.quality = rel.quality;
+            if (inversion >= inversionCount(state.quality)) {
+              inversion = inversionCount(state.quality) - 1;
+            }
+            this._resnap();
+            select.value = String(state.rootPc);
+            relabelRootOptions();
+            rebuildModeButtons();
+            rebuildDots();
+            render();
+            return true;
+          },
+          setAccidental(style) {
+            state.accidental = style;
+            updateAccButtons();
+            relabelRootOptions();
+            render();
+          },
+          setColumnKey(keyName, keyQuality) {
+            columnKey = keyName;
+            columnKeyQuality = keyQuality || 'major';
+            if (state.accidental === null) {
+              relabelRootOptions();
+              render();
+            }
+          },
+          getRootPc() { return state.rootPc; },
+          getRootName() { return chordRootName(); },
+          serialize() {
+            return {
+              rootPc: state.rootPc,
+              quality: state.quality,
+              accidental: state.accidental,
+              spelledRoot: state.spelledRoot,
+              inversion, rootSem,
+              _anchorInv: anchorInversion,
+              _anchorRootSem: anchorRootSem
+            };
+          }
+        };
+
+        return slider;
+      }
+
+      // =====================================================================
+      //  COLUMN
+      // =====================================================================
+      let columnCounter = 0;
+
+      function createColumn(initialSliders, label = null, initialKey = null) {
+        const column = document.createElement('div');
+        column.className = 'column';
+        columnCounter++;
+        const title = label || `Column ${columnCounter}`;
+
+        let colKey = initialKey || { name: 'C', quality: 'major' };
+
+        const header = document.createElement('div');
+        header.className = 'column-header';
+
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'column-title';
+        titleSpan.textContent = title;
+
+        const controls = document.createElement('div');
+        controls.className = 'column-controls';
+
+        const colKeySel = document.createElement('select');
+        colKeySel.className = 'column-transpose';
+        colKeySel.title = 'Transpose this column to a new key';
+        colKeySel.setAttribute('aria-label', 'Transpose this column to a new key');
+        const keyPlaceholder = document.createElement('option');
+        keyPlaceholder.value = '';
+        keyPlaceholder.textContent = 'Key…';
+        colKeySel.appendChild(keyPlaceholder);
+
+        const majorGroup = document.createElement('optgroup');
+        majorGroup.label = 'Major';
+        ALL_MAJOR.forEach(k => {
+          const o = document.createElement('option');
+          o.value = k;
+          o.textContent = THEORETICAL_KEYS[k] ? `${k} (theoretical)` : k;
+          majorGroup.appendChild(o);
+        });
+        colKeySel.appendChild(majorGroup);
+
+        const minorGroup = document.createElement('optgroup');
+        minorGroup.label = 'Minor';
+        ALL_MAJOR.forEach(maj => {
+          const m = relativeMinorOf(maj);
+          if (!m) return;
+          const o = document.createElement('option');
+          o.value = m + 'm';
+          o.textContent = THEORETICAL_KEYS[m] ? `${m}m (theoretical)` : `${m}m`;
+          minorGroup.appendChild(o);
+        });
+        colKeySel.appendChild(minorGroup);
+
+        const colParallelBtn = document.createElement('button');
+        colParallelBtn.className = 'column-mode';
+        colParallelBtn.title = 'Parallel major/minor (same root, e.g. C ↔ Cm)';
+        colParallelBtn.textContent = '∥ maj/min';
+
+        const colRelativeBtn = document.createElement('button');
+        colRelativeBtn.className = 'column-mode';
+        colRelativeBtn.title = 'Relative major/minor (e.g. C ↔ Am)';
+        colRelativeBtn.textContent = '↔ rel';
+
+        const colDown = document.createElement('button');
+        colDown.className = 'column-step';
+        colDown.title = 'Move whole column down';
+        colDown.textContent = '‹';
+
+        const colUp = document.createElement('button');
+        colUp.className = 'column-step';
+        colUp.title = 'Move whole column up';
+        colUp.textContent = '›';
+
+        const colDup = document.createElement('button');
+        colDup.className = 'column-duplicate';
+        colDup.title = 'Duplicate this column';
+        colDup.textContent = '⧉';
+
+        const colRemove = document.createElement('button');
+        colRemove.className = 'column-remove';
+        colRemove.title = 'Remove this column';
+        colRemove.textContent = '✕';
+
+        controls.appendChild(colKeySel);
+        controls.appendChild(colParallelBtn);
+        controls.appendChild(colRelativeBtn);
+        controls.appendChild(colDown);
+        controls.appendChild(colUp);
+        controls.appendChild(colDup);
+        controls.appendChild(colRemove);
+
+        // Theoretical badge goes ABOVE the title/controls row.
+        // Its space is always reserved (visibility:hidden when empty)
+        // so every column header is the same height.
+        const theoryBadge = document.createElement('div');
+        theoryBadge.className = 'column-theory hidden';
+        header.appendChild(theoryBadge);
+
+        header.appendChild(titleSpan);
+        header.appendChild(controls);
+
+        column.appendChild(header);
+
+        const stack = document.createElement('div');
+        stack.className = 'column-stack';
+        column.appendChild(stack);
+
+        if (Array.isArray(initialSliders)) {
+          initialSliders.forEach(cfg => {
+            stack.appendChild(createSlider(Object.assign({}, cfg, {
+              _columnKey: colKey.name,
+              _columnKeyQuality: colKey.quality
+            })));
+          });
+        } else {
+          for (let i = 0; i < initialSliders; i++) {
+            stack.appendChild(createSlider({
+              _columnKey: colKey.name,
+              _columnKeyQuality: colKey.quality
+            }));
+          }
+        }
+
+        const addBtn = document.createElement('button');
+        addBtn.className = 'column-add';
+        addBtn.textContent = '+ Add chord below';
+        addBtn.addEventListener('click', () => {
+          const newSlider = createSlider({
+            _columnKey: colKey.name,
+            _columnKeyQuality: colKey.quality
+          });
+          stack.appendChild(newSlider);
+          newSlider._onManualChange = rebase;
+          rebase();
+          saveLayout();
+        });
+        column.appendChild(addBtn);
+
+        let columnStep = 0;
+
+        function bounds() {
+          const sliders = Array.from(stack.querySelectorAll('.slider'));
+          if (!sliders.length) return { min: 0, max: 0 };
+          let lo = -12, hi = 12;
+          sliders.forEach(sl => {
+            let s = 0;
+            while (s > -12 && sl._api.fitsAtStep(s - 1)) s--;
+            lo = Math.max(lo, s);
+            s = 0;
+            while (s < 12 && sl._api.fitsAtStep(s + 1)) s++;
+            hi = Math.min(hi, s);
+          });
+          return { min: lo, max: hi };
+        }
+        function applyColumnStep() {
+          Array.from(stack.querySelectorAll('.slider')).forEach(sl => sl._api.applyColumnStep(columnStep));
+        }
+        function rebase() {
+          Array.from(stack.querySelectorAll('.slider')).forEach(sl => sl._api.resetAnchor());
+          columnStep = 0;
+        }
+        function stepColumnUp() {
+          const { min, max } = bounds();
+          if (columnStep + 1 > max) columnStep = min; else columnStep += 1;
+          applyColumnStep(); saveLayout();
+        }
+        function stepColumnDown() {
+          const { min, max } = bounds();
+          if (columnStep - 1 < min) columnStep = max; else columnStep -= 1;
+          applyColumnStep(); saveLayout();
+        }
+
+        colKeySel.addEventListener('change', () => {
+          const val = colKeySel.value;
+          colKeySel.value = '';
+          if (!val) return;
+          let name, quality;
+          if (val.length > 1 && val.endsWith('m')) {
+            name = val.slice(0, -1); quality = 'minor';
+          } else {
+            name = val; quality = 'major';
+          }
+          column._transposeToKey(name, quality);
+        });
+
+        colParallelBtn.addEventListener('click', () => column._parallelMode());
+        colRelativeBtn.addEventListener('click', () => column._relativeMode());
+        colDown.addEventListener('click', stepColumnDown);
+        colUp.addEventListener('click', stepColumnUp);
+
+        colDup.addEventListener('click', () => {
+          const sliderConfigs = Array.from(stack.querySelectorAll('.slider')).map(sl => sl._api.serialize());
+          const copy = createColumn(sliderConfigs, null, { name: colKey.name, quality: colKey.quality });
+          column.after(copy);
+          renumberColumns();
+          saveLayout();
+        });
+
+        colRemove.addEventListener('click', () => {
+          column.remove();
+          renumberColumns();
+          saveLayout();
+        });
+
+        stack.querySelectorAll('.slider').forEach(sl => { sl._onManualChange = rebase; });
+        column._rebase = rebase;
+
+        function updateTheoryBadge() {
+          const keyName = colKey.name;
+          const info = THEORETICAL_KEYS[keyName];
+          if (info && ((colKey.quality === 'major' && info.twinQuality === 'major') ||
+                       (colKey.quality === 'minor' && info.twinQuality === 'minor'))) {
+            theoryBadge.textContent = `⚠️ Theoretical key — practical alternative: ${info.twinName} ${info.twinQuality}`;
+            theoryBadge.classList.remove('hidden');
+          } else {
+            theoryBadge.classList.add('hidden');
+            theoryBadge.textContent = '';
+          }
+        }
+
+        function applyKeyToSliders() {
+          Array.from(stack.querySelectorAll('.slider')).forEach(sl => {
+            sl._api.setColumnKey(colKey.name, colKey.quality);
+          });
+        }
+
+        column._transposeToKey = function (targetName, targetQuality) {
+          const sliders = Array.from(stack.querySelectorAll('.slider'));
+          if (!sliders.length) {
+            colKey = { name: targetName, quality: targetQuality };
+            updateTheoryBadge();
+            saveLayout();
+            return;
+          }
+          const firstRootName = sliders[0]._api.getRootName();
+          const firstPc = NOTE_TO_PC[firstRootName] !== undefined ? NOTE_TO_PC[firstRootName] : sliders[0]._api.getRootPc();
+          const targetPc = NOTE_TO_PC[targetName] !== undefined ? NOTE_TO_PC[targetName] : 0;
+          const delta = ((targetPc - firstPc) % 12 + 12) % 12;
+          const signedDelta = delta > 6 ? delta - 12 : delta;
+
+          colKey = { name: targetName, quality: targetQuality };
+          applyKeyToSliders();
+
+          sliders.forEach(sl => sl._api.transposeRoot(signedDelta));
+
+          if (sliders.length) {
+            const first = sliders[0];
+            const pc = NOTE_TO_PC[targetName] !== undefined ? NOTE_TO_PC[targetName] : 0;
+            first._api.setRootPc(pc);
+            first._api.transposeRoot(0);
+          }
+
+          updateTheoryBadge();
+          rebase();
+          saveLayout();
+        };
+
+        column._parallelMode = function () {
+          colKey.quality = colKey.quality === 'major' ? 'minor' : 'major';
+          applyKeyToSliders();
+          Array.from(stack.querySelectorAll('.slider')).forEach(sl => sl._api.toggleMode());
+          updateTheoryBadge();
+          rebase();
+          saveLayout();
+        };
+
+        column._relativeMode = function () {
+          const isMinor = colKey.quality === 'minor';
+          let newName, newQuality;
+          if (isMinor) {
+            newName = relativeMajorOf(colKey.name);
+            newQuality = 'major';
+            if (!newName) return;
+          } else {
+            newName = relativeMinorOf(colKey.name);
+            newQuality = 'minor';
+            if (!newName) return;
+          }
+          colKey = { name: newName, quality: newQuality };
+          applyKeyToSliders();
+          Array.from(stack.querySelectorAll('.slider')).forEach(sl => sl._api.toRelative());
+          updateTheoryBadge();
+          rebase();
+          saveLayout();
+        };
+
+        column._getKey = function () { return { name: colKey.name, quality: colKey.quality }; };
+
+        applyKeyToSliders();
+        updateTheoryBadge();
+
+        return column;
+      }
+
+      function renumberColumns() {
+        let n = 0;
+        document.querySelectorAll('.columns > .column').forEach(col => {
+          n++;
+          const span = col.querySelector('.column-title');
+          if (span && /^Column \d+$/.test(span.textContent)) {
+            span.textContent = `Column ${n}`;
+          }
+        });
+        columnCounter = n;
+      }
+
+      // =====================================================================
+      //  SAVE / LOAD
+      // =====================================================================
+      const STORAGE_KEY = 'chord-sliders-layout-v27';
+
+      function saveLayout() {
+        const data = [];
+        document.querySelectorAll('.columns > .column').forEach(col => {
+          const title = col.querySelector('.column-title').textContent;
+          const key = col._getKey ? col._getKey() : { name: 'C', quality: 'major' };
+          const sliders = [];
+          col.querySelectorAll('.column-stack > .slider').forEach(sl => {
+            sliders.push(sl._api.serialize());
+          });
+          data.push({ title, key, sliders });
+        });
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+      }
+
+      function loadLayout() {
+        let raw;
+        try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return false; }
+        if (!raw) {
+          try {
+            const oldRaw = localStorage.getItem('chord-sliders-layout-v26');
+            if (oldRaw) {
+              const oldData = JSON.parse(oldRaw);
+              if (Array.isArray(oldData) && oldData.length) {
+                columnsEl.innerHTML = '';
+                columnCounter = 0;
+                oldData.forEach(col => {
+                  let colKey = { name: 'C', quality: 'major' };
+                  if (Array.isArray(col.sliders) && col.sliders.length) {
+                    const first = col.sliders[0];
+                    const pc = first.rootPc !== undefined ? first.rootPc : (first.root || 0);
+                    const name = spellNoteBySharp(pc);
+                    colKey = { name, quality: 'major' };
+                  }
+                  const column = createColumn(col.sliders, col.title, colKey);
+                  columnsEl.appendChild(column);
+                });
+                saveLayout();
+                return true;
+              }
+            }
+          } catch (e) {}
+          return false;
+        }
+        let data;
+        try { data = JSON.parse(raw); } catch (e) { return false; }
+        if (!Array.isArray(data) || !data.length) return false;
+        columnsEl.innerHTML = '';
+        columnCounter = 0;
+        data.forEach(col => {
+          const key = col.key || { name: 'C', quality: 'major' };
+          const column = createColumn(col.sliders, col.title, key);
+          columnsEl.appendChild(column);
+        });
+        return true;
+      }
+
+      function buildDefaultLayout() {
+        columnsEl.innerHTML = '';
+        columnCounter = 0;
+        for (let i = 0; i < 3; i++) {
+          columnsEl.appendChild(createColumn(3));
+        }
+      }
+
+      const columnsEl = document.getElementById('columns');
+      if (!loadLayout()) buildDefaultLayout();
+
+      document.getElementById('addColumnBtn').addEventListener('click', () => {
+        columnCounter++;
+        const col = createColumn(1);
+        columnsEl.appendChild(col);
+        col.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'end' });
+        saveLayout();
+      });
+
+      document.getElementById('addSliderBtn').addEventListener('click', () => {
+        const firstStack = columnsEl.querySelector('.column-stack');
+        if (firstStack) {
+          const colEl = firstStack.closest('.column');
+          const key = colEl && colEl._getKey ? colEl._getKey() : { name: 'C', quality: 'major' };
+          const newSlider = createSlider({ _columnKey: key.name, _columnKeyQuality: key.quality });
+          firstStack.appendChild(newSlider);
+          if (colEl && colEl._rebase) {
+            newSlider._onManualChange = colEl._rebase;
+            colEl._rebase();
+          }
+          saveLayout();
+        }
+      });
+
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        if (confirm('Reset the layout to 3 columns with 3 chord sliders each?')) {
+          try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+          buildDefaultLayout();
+          saveLayout();
+        }
+      });
+
+    })();
+  </script>
+</body>
+</html>
